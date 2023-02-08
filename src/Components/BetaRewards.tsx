@@ -1,4 +1,4 @@
-import {Button, FormControl, FormErrorMessage, FormLabel, Icon, Select} from '@chakra-ui/react'
+import {Button, FormControl, FormErrorMessage, FormLabel, Icon, Input} from '@chakra-ui/react'
 import {useForm} from 'react-hook-form'
 import {FiFile} from 'react-icons/fi'
 import {FileUpload} from "./FileUpload";
@@ -8,6 +8,7 @@ import {ParticipantsTable} from "./ParticipantsTable";
 import readXlsxFile from "read-excel-file";
 import {Participants, useBatchTransactions} from "../hooks/useBatchTransactions";
 import {useApi} from "../hooks/useApi";
+import {cryptoWaitReady} from "@polkadot/util-crypto";
 
 type FormValues = {
     file_: FileList
@@ -29,6 +30,7 @@ export const BetaRewardsForm = () => {
     const [loadingAccounts, setLoadingAccounts] = useState<string[]>([])
     const [isSendingRewards, setIsSendingRewards] = useState(false)
     const {IsApiInitialized} = useApi()
+    const [seedPhrase,setSeedPhrase] = useState<string>("")
     const isReady: boolean = IsApiInitialized && !!filename && !isSendingRewards
     const pushToLoadingAccounts = (a: string) => {
         setLoadingAccounts(prev => [...prev, a])
@@ -46,6 +48,7 @@ export const BetaRewardsForm = () => {
 
     useEffect(() => {
         const init = async () => {
+            await cryptoWaitReady()
             const allInjected = await web3Enable('polkadex-internal');
             await web3EnablePromise
             const allAccounts = await web3Accounts();
@@ -98,20 +101,16 @@ export const BetaRewardsForm = () => {
             accounts: participants,
             pushToFailedAccounts,
             pushToSentAccounts,
-            pushToLoadingAccounts
+            pushToLoadingAccounts,
+            seedPhrase
         }).then(() => setIsSendingRewards(false))
     })
     return (
         <>
             <form onSubmit={onSubmit}>
                 <FormControl isInvalid={!!errors.file_} isRequired>
-                    <FormLabel>Select account from extension</FormLabel>
-                    <Select placeholder=''>
-                        {accounts.map((account) => {
-                                return (<option key={account.address}>{account.name}</option>)
-                            }
-                        )}
-                    </Select>
+                    <FormLabel>Input your seed phrase</FormLabel>
+                    <Input placeholder='' onChange={(e)=>setSeedPhrase(e.target.value)}/>
                     <FormLabel>{'File input'}</FormLabel>
                     <FileUpload
                         accept={'.xlsx'}

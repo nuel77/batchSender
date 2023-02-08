@@ -15,7 +15,7 @@ export const ParticipantsTable = ({
                                       failedAccounts,
                                       loadingAccounts,
                                       accounts,
-                                      deleteAccount
+                                      deleteAccount,
                                   }: ParticipantsTableProps) => {
     const getStatus = (a: string): any => {
         if (sentAccounts.includes(a)) {
