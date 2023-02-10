@@ -4,25 +4,26 @@ import {CheckCircleIcon, CloseIcon, DeleteIcon} from "@chakra-ui/icons";
 
 type ParticipantsTableProps = {
     accounts: Participants[]
-    sentAccounts: string[]
-    failedAccounts: string[]
-    loadingAccounts: string[]
-
+    sentBatchIndex: number
+    failedBatchIndex: number
+    loadingBatchIndex: number
+    batchSize: number
     deleteAccount: (a: string) => void
 }
 export const ParticipantsTable = ({
-                                      sentAccounts,
-                                      failedAccounts,
-                                      loadingAccounts,
+                                      sentBatchIndex,
+                                      failedBatchIndex,
+                                      loadingBatchIndex,
                                       accounts,
                                       deleteAccount,
+                                      batchSize
                                   }: ParticipantsTableProps) => {
-    const getStatus = (a: string): any => {
-        if (sentAccounts.includes(a)) {
+    const getStatus = (idx: number, a: string): any => {
+        if (sentBatchIndex >= 0 && Math.floor(idx / batchSize) <= sentBatchIndex) {
             return <CheckCircleIcon/>
-        } else if (failedAccounts.includes(a)) {
+        } else if (failedBatchIndex >= 0 && Math.floor(idx / batchSize) <= failedBatchIndex) {
             return <CloseIcon/>
-        } else if (loadingAccounts.includes(a)) {
+        } else if (loadingBatchIndex >= 0 && Math.floor(idx / batchSize) <= loadingBatchIndex) {
             return <Spinner size='sm'/>
         } else return <IconButton
             onClick={() => deleteAccount(a)}
@@ -37,18 +38,20 @@ export const ParticipantsTable = ({
                 <Table variant='simple'>
                     <Thead>
                         <Tr>
+                            <Th>Batch Id</Th>
                             <Th>Address</Th>
                             <Th isNumeric>Amount</Th>
                             <Th>Status</Th>
                         </Tr>
                     </Thead>
                     <Tbody>
-                        {accounts.map((a) => {
+                        {accounts.map((a, idx) => {
                             return (
                                 <Tr key={a.address}>
+                                    <Td>{idx}</Td>
                                     <Td>{a.address}</Td>
                                     <Td isNumeric>{a.amount}</Td>
-                                    <Td>{getStatus(a.address)}</Td>
+                                    <Td>{getStatus(idx, a.address)}</Td>
                                 </Tr>
                             )
                         })}

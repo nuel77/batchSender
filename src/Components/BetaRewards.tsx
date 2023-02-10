@@ -1,4 +1,4 @@
-import {Button, FormControl, FormErrorMessage, FormLabel, Icon, Input} from '@chakra-ui/react'
+import {Button, FormControl, FormErrorMessage, FormLabel, Icon, Input, Select} from '@chakra-ui/react'
 import {useForm} from 'react-hook-form'
 import {FiFile} from 'react-icons/fi'
 import {FileUpload} from "./FileUpload";
@@ -12,9 +12,12 @@ import {cryptoWaitReady} from "@polkadot/util-crypto";
 
 type FormValues = {
     file_: FileList
+    batchNo: string
+
+    selected: any
 }
 
-type Account = {
+export type Account = {
     address: string,
     name?: string,
     injector: any
@@ -23,23 +26,27 @@ export const BetaRewardsForm = () => {
     const {register, handleSubmit, formState: {errors}} = useForm<FormValues>()
     const {batchSendToParticipants} = useBatchTransactions()
     const [accounts, setAccounts] = useState<Account[]>([])
+    const [batchSize, setBatchSize] = useState<number>(-1)
     const [filename, setFilename] = useState<string | undefined>()
     const [participants, setParticipants] = useState<Participants[]>([])
-    const [sentAccounts, setSentAccounts] = useState<string[]>([])
-    const [failedAccounts, setFailedAccounts] = useState<string[]>([])
-    const [loadingAccounts, setLoadingAccounts] = useState<string[]>([])
+    const [sentBatchIndex, setSentBatchIndex] = useState<number>(-1)
+    const [failedBatchIndex, setFailedBatchIndex] = useState<number>(-1)
+    const [loadingBatchIndex, setLoadingBatchIndex] = useState<number>(-1)
     const [isSendingRewards, setIsSendingRewards] = useState(false)
     const {IsApiInitialized} = useApi()
-    const [seedPhrase,setSeedPhrase] = useState<string>("")
+    const [seedPhrase, setSeedPhrase] = useState<string>("")
     const isReady: boolean = IsApiInitialized && !!filename && !isSendingRewards
-    const pushToLoadingAccounts = (a: string) => {
-        setLoadingAccounts(prev => [...prev, a])
+    const pushToLoadingAccounts = (a: number) => {
+        console.log("loading", a)
+        setLoadingBatchIndex(a)
     }
-    const pushToSentAccounts = (a: string) => {
-        setSentAccounts(prev => [...prev, a])
+    const pushToSentAccounts = (a: number) => {
+        console.log("sent", a)
+        setSentBatchIndex(a)
     }
-    const pushToFailedAccounts = (a: string) => {
-        setFailedAccounts(prev => [...prev, a])
+    const pushToFailedAccounts = (a: number) => {
+        console.log("failed", a)
+        setFailedBatchIndex(a)
     }
     const deleteAccount = (a: string) => {
         const accounts = participants.filter(e => e.address !== a)
@@ -49,7 +56,7 @@ export const BetaRewardsForm = () => {
     useEffect(() => {
         const init = async () => {
             await cryptoWaitReady()
-            const allInjected = await web3Enable('polkadex-internal');
+            await web3Enable('polkadex-internal');
             await web3EnablePromise
             const allAccounts = await web3Accounts();
             const accountPromises = allAccounts.map(async (account) => {
@@ -95,22 +102,36 @@ export const BetaRewardsForm = () => {
             }
         }
     }
-    const onSubmit = handleSubmit((data) => {
+    const onSubmit = handleSubmit(async (data) => {
         setIsSendingRewards(true)
+        const {batchNo, selected, file_} = data
+        const sender = accounts?.find((e) => e.name === selected)
+        setBatchSize(Number(batchNo))
         batchSendToParticipants({
             accounts: participants,
             pushToFailedAccounts,
             pushToSentAccounts,
             pushToLoadingAccounts,
-            seedPhrase
-        }).then(() => setIsSendingRewards(false))
+            seedPhrase,
+            batchSize: Number(batchNo),
+            sender
+        }).finally(() => setIsSendingRewards(false))
     })
     return (
         <>
             <form onSubmit={onSubmit}>
                 <FormControl isInvalid={!!errors.file_} isRequired>
-                    <FormLabel>Input your seed phrase</FormLabel>
-                    <Input placeholder='' onChange={(e)=>setSeedPhrase(e.target.value)}/>
+                    <FormLabel>Select account from extension</FormLabel>
+                    <Select placeholder=''
+                            id='batchNo'
+                            {...register('selected', {
+                                required: 'This is required',
+                            })}>
+                        {accounts.map((account) => {
+                                return (<option key={account.address}>{account.name}</option>)
+                            }
+                        )}
+                    </Select>
                     <FormLabel>{'File input'}</FormLabel>
                     <FileUpload
                         accept={'.xlsx'}
@@ -121,6 +142,14 @@ export const BetaRewardsForm = () => {
                             {filename ? filename : "Upload list of rewards (.xlsx)"}
                         </Button>
                     </FileUpload>
+                    <FormLabel>Select batch size</FormLabel>
+                    <Input
+                        id='batchNo'
+                        placeholder='Accounts per batch'
+                        {...register('batchNo', {
+                            required: 'This is required',
+                        })}
+                    />
                     <FormErrorMessage>
                         {errors.file_ && errors?.file_.message}
                     </FormErrorMessage>
@@ -134,16 +163,13 @@ export const BetaRewardsForm = () => {
                 </Button>
                 <ParticipantsTable
                     accounts={participants}
-                    sentAccounts={sentAccounts}
-                    loadingAccounts={loadingAccounts}
-                    failedAccounts={failedAccounts}
+                    sentBatchIndex={sentBatchIndex}
+                    loadingBatchIndex={loadingBatchIndex}
+                    failedBatchIndex={failedBatchIndex}
                     deleteAccount={deleteAccount}
+                    batchSize={batchSize}
                 />
             </form>
         </>
     )
-}
-
-const shortAddress = (address: string) => {
-    return (address.slice(0, 5) + "...")
 }

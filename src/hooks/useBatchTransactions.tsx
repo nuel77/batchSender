@@ -1,61 +1,75 @@
-import {Keyring} from "@polkadot/api";
 import {useState} from "react";
 import {useApi} from "./useApi";
-import {KeyringPair} from "@polkadot/keyring/types";
+import {Account} from "../Components/BetaRewards";
 
 export type Participants = {
     address: string,
     amount: string | number
 }
 const UNIT = 10 ** 12;
-const PHRASE = 'entire material egg meadow latin bargain dutch coral blood melt acoustic thought';
 
 export const useBatchTransactions = () => {
     const {isApiConnected, api} = useApi()
-    const [state, setState] = useState("hello")
-    const batchSendToParticipantPromise = (acc: Participants, pair: KeyringPair) => {
-        const tx = api.tx.balances.transfer(acc.address, Number(acc.amount) * UNIT);
+    const batchSendToParticipantPromise = (accs: Participants[], sender: Account) => {
+        const txs = accs.map((elem => api.tx.balances.transfer(elem.address, Number(elem.amount) * UNIT)))
+        const tx = api.tx.utility.batch(txs)
         return new Promise((resolve, reject) => {
-            tx.signAndSend(pair, (result) => {
+            tx.signAndSend(sender.address, {signer: sender.injector.signer}, (result) => {
                 console.log(`Current status is ${result.status}`);
                 if (result.status.isInBlock || result.status.isFinalized) {
-                    resolve(acc.address)
+                    resolve("")
                 } else if (result.isError) {
-                    reject(acc.address)
+                    reject()
                 }
             })
         })
     }
     type batchSendConfig = {
         accounts: Participants[]
-        pushToLoadingAccounts: (a: string) => void
-        pushToSentAccounts: (a: string) => void
-        pushToFailedAccounts: (a: string) => void
+        pushToLoadingAccounts: (a: number) => void
+        pushToSentAccounts: (a: number) => void
+        pushToFailedAccounts: (a: number) => void
         seedPhrase?: string
+        sender?: Account
+        batchSize: number
     }
     const batchSendToParticipants = async (params: batchSendConfig): Promise<void> => {
-        if (isApiConnected) {
-            const {accounts} = params
-            const phrase = params.seedPhrase ?? PHRASE
-            const keyring = new Keyring({type: 'sr25519'});
-            const pair = keyring.addFromUri(phrase);
-            for (let i = 0; i < accounts.length; i += 1) {
-                try {
-                    setState("noi")
-                    params.pushToLoadingAccounts(accounts[i].address)
-                    await batchSendToParticipantPromise(accounts[i], pair);
-                    params.pushToSentAccounts(accounts[i].address)
-                } catch (e) {
-                    params.pushToFailedAccounts(accounts[i].address)
-                }
-            }
-            console.log(state)
-        } else {
+        if (!isApiConnected) {
             alert("connection failed")
+            return
+        }
+        if (!params.sender) {
+            alert("account has no access")
+            return
+        }
+        const {accounts} = params
+        const batches = createBatches(accounts, params.batchSize)
+        console.log("batches", batches)
+        for (let i = 0; i < batches.length; i += 1) {
+            try {
+                params.pushToLoadingAccounts(i)
+                await batchSendToParticipantPromise(batches[i], params.sender);
+                params.pushToSentAccounts(i)
+            } catch (e) {
+                params.pushToFailedAccounts(i)
+            }
         }
     }
 
     return {
         batchSendToParticipants,
     }
+}
+
+const createBatches = (accounts: Participants[], batchSize: number): Participants[][] => {
+    let batches: Participants[][] = []
+    let tmp: Participants[] = []
+    for (let i = 0; i < accounts.length; i++) {
+        tmp.push(accounts[i]);
+        if (i > 0 && (i-1) % batchSize === 0 ) {
+            batches.push(tmp)
+            tmp = []
+        }
+    }
+    return batches
 }
