@@ -52,7 +52,7 @@ export const BatchSenderProvider = ({children}: React.PropsWithChildren<unknown>
             const amount = Utils.parseUnits(parseFloat(elem.amount.toString()).toFixed(3), UNIT)
             api.tx.balances.transfer(elem.address, amount)
         }))
-        const tx: SubmittableExtrinsic = api.tx.utility.batch(txs)
+        const tx:any = api.tx.utility.batch(txs)
         // @ts-ignore
         await signAndSubmitPromiseWrapper({
             tx,
