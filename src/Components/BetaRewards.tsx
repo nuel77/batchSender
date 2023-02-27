@@ -5,9 +5,7 @@ import {FileUpload} from "./FileUpload";
 import React, {useState} from "react";
 import {ParticipantsTable} from "./ParticipantsTable";
 import readXlsxFile from "read-excel-file";
-import {useBatchSender} from "../hooks";
-import {useApi} from "../hooks";
-import {useWallet} from "../hooks";
+import {useApi, useBatchSender, useWallet} from "../hooks";
 import {Participant} from "../providers";
 
 type FormValues = {
@@ -19,7 +17,7 @@ type FormValues = {
 export const BetaRewardsForm = () => {
     const {register, handleSubmit, formState: {errors}} = useForm<FormValues>()
     const {accounts, selectAccount} = useWallet()
-    const {updateBatchSize, updateParticipants, batchSendToParticipants} = useBatchSender()
+    const {updateParticipants, batchSendToParticipants} = useBatchSender()
     const [filename, setFilename] = useState<string | undefined>()
     const {IsApiInitialized} = useApi()
     const isReady: boolean = IsApiInitialized && !!filename
@@ -57,11 +55,15 @@ export const BetaRewardsForm = () => {
     }
     const onSubmit = handleSubmit(async (data) => {
         const {batchNo, selected, file_} = data
+        console.log("params", {batchNo, selected, file_})
         const sender = accounts?.find((e) => e.name === selected)
         selectAccount?.(sender)
-        updateBatchSize?.(Number(batchNo))
-        batchSendToParticipants?.().finally(() => {
-            alert("Done")
+        if (!sender) {
+            alert("Please select account")
+            return;
+        }
+        batchSendToParticipants?.(sender, Number(batchNo)).finally(() => {
+            console.log("done")
         })
     })
     return (
@@ -70,8 +72,7 @@ export const BetaRewardsForm = () => {
                 <FormControl isInvalid={!!errors.file_} isRequired>
                     <FormLabel>Select account from extension</FormLabel>
                     <Select placeholder=''
-                            value={accounts?.[0]?.name}
-                            id='batchNo'
+                            id='selected'
                             {...register('selected', {
                                 required: 'This is required',
                             })}>
