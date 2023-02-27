@@ -50,9 +50,9 @@ export const BatchSenderProvider = ({children}: React.PropsWithChildren<unknown>
         }
         const txs = accs.map((elem => {
             const amount = Utils.parseUnits(parseFloat(elem.amount.toString()).toFixed(3), UNIT)
-            api.tx.balances.transfer(elem.address, amount)
+            return api.tx.balances.transfer(elem.address, amount)
         }))
-        const tx:any = api.tx.utility.batch(txs)
+        const tx:any = api.tx.utility.batchAll(txs)
         // @ts-ignore
         await signAndSubmitPromiseWrapper({
             tx,
