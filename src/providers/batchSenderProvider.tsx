@@ -25,18 +25,18 @@ export const BatchSenderProvider = ({children}: React.PropsWithChildren<unknown>
     const {isApiConnected, api} = useApi()
     const [participants, setParticipants] = useState<Participant[]>([])
     const updateBatchStatus = (batch: Participant[], status: Participant["status"]) => {
-        const newParticipants = participants.map((elem) => {
-            if (batch.find((e) => e.address === elem.address)) {
-                return {...elem, status}
-            }
-            return elem
+        setParticipants((participants) => {
+            return participants.map((elem) => {
+                if (batch.find((e) => e.address === elem.address)) {
+                    return {...elem, status}
+                }
+                return elem
+            })
         })
-        setParticipants(newParticipants)
     }
 
     const deleteParticipant = (address: string) => {
-        const newParticipants = participants.filter((elem) => elem.address !== address)
-        setParticipants(newParticipants)
+        setParticipants(participants => participants.filter((elem) => elem.address !== address))
     }
     const updateParticipants = (participants: Participant[]) => {
         setParticipants(participants)
