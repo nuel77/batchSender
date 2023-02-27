@@ -3,7 +3,6 @@ import {useApi} from "../hooks";
 import {Account} from "./wallet";
 import Utils from "@polkadex/utils";
 import {signAndSubmitPromiseWrapper} from "@polkadex/blockchain-api"
-import {SubmittableExtrinsic} from "@polkadot/api/promise/types";
 
 export type Participant = {
     address: string,
@@ -52,8 +51,8 @@ export const BatchSenderProvider = ({children}: React.PropsWithChildren<unknown>
             const amount = Utils.parseUnits(parseFloat(elem.amount.toString()).toFixed(3), UNIT)
             return api.tx.balances.transfer(elem.address, amount)
         }))
-        const tx:any = api.tx.utility.batchAll(txs)
-        // @ts-ignore
+        const tx = api.tx.utility.batchAll(txs)
+
         await signAndSubmitPromiseWrapper({
             tx,
             address: sender.address,
