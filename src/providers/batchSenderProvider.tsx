@@ -2,6 +2,8 @@ import React, {useCallback, useState} from "react";
 import {useApi} from "../hooks";
 import {Account} from "./wallet";
 import Utils from "@polkadex/utils";
+import {signAndSubmitPromiseWrapper} from "@polkadex/blockchain-api"
+import {SubmittableExtrinsic} from "@polkadot/api/promise/types";
 
 export type Participant = {
     address: string,
@@ -42,7 +44,7 @@ export const BatchSenderProvider = ({children}: React.PropsWithChildren<unknown>
         setParticipants(participants)
     }
 
-    const batchSendToParticipantPromise = useCallback((accs: Participant[], sender: Account) => {
+    const batchSendToParticipantPromise = useCallback(async (accs: Participant[], sender: Account) => {
         if (!api) {
             throw new Error("api is not initialized")
         }
@@ -50,16 +52,13 @@ export const BatchSenderProvider = ({children}: React.PropsWithChildren<unknown>
             const amount = Utils.parseUnits(parseFloat(elem.amount.toString()).toFixed(3), UNIT)
             api.tx.balances.transfer(elem.address, amount)
         }))
-        const tx = api.tx.utility.batch(txs)
-        return new Promise((resolve, reject) => {
-            tx.signAndSend(sender.address, {signer: sender.injector.signer}, (result) => {
-                console.log(`Current status is ${result.status}`);
-                if (result.status.isInBlock || result.status.isFinalized) {
-                    resolve("")
-                } else if (result.isError) {
-                    reject()
-                }
-            })
+        const tx: SubmittableExtrinsic = api.tx.utility.batch(txs)
+        // @ts-ignore
+        await signAndSubmitPromiseWrapper({
+            tx,
+            address: sender.address,
+            signer: sender.injector.signer,
+            criteria: "IS_IN_BLOCK"
         })
     }, [api])
 

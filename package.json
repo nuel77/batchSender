@@ -16,6 +16,7 @@
     "@chakra-ui/react": "^2.4.9",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
+    "@polkadex/blockchain-api": "^1.1.38",
     "@polkadex/utils": "^1.1.37",
     "@polkadot/api": "^9.13.6",
     "@polkadot/extension-dapp": "^0.44.8",
