@@ -22,7 +22,7 @@ export const ApiProvider = ({children}: React.PropsWithChildren<unknown>) => {
     const [isApiConnected, setIsApiConnected] = useState<boolean>(false)
     const [IsApiInitialized, setIsApiInitialized] = useState<boolean>(false)
     const [api, setApi] = useState<ApiPromise | null>(null)
-    let url = "wss://blockchain.polkadex.trade"
+    let url = "wss://mainnet.polkadex.trade"
     useEffect((): void => {
         createApi(url)
             .then((api): void => {
